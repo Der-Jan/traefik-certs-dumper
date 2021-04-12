@@ -51,6 +51,7 @@ dump() {
     done
 
     if [[ "${diff_available}" = true ]]; then
+      create_domainsfile
       combine_pem
       change_ownership
       restart_containers
@@ -79,6 +80,7 @@ dump() {
     done
 
     if [[ "${diff_available}" = true ]]; then
+      create_domainsfile
       combine_pem
       change_ownership
       restart_containers
@@ -96,6 +98,7 @@ dump() {
       else
         log "Certificate or key for '${DOMAINS[0]}' differ, updating"
         mv ${workdir}/${DOMAINS[0]}/*.pem "${outputdir}/"
+        create_domainsfile
         combine_pem
         change_ownership
         restart_containers
@@ -105,6 +108,15 @@ dump() {
       err "Certificates for domain '${DOMAINS[0]}' don't exist. Omitting..."
     fi
   fi
+}
+
+create_domainsfile() {
+  for i in "${DOMAINS[@]}" ; do
+    if [[ -f ${outputdir}/${i}/cert.pem && -f ${outputdir}/${i}/key.pem ]]; then
+      log "Creating domains file for main domain ${i}"
+      echo -n >${outputdir}/"${i}"/domains ${i} $(openssl x509 -noout -text -in ${outputdir}/"${i}"/cert.pem | grep "DNS:" | sed -e 's/\(DNS:\)\|,//g' | sed "s/${i}//" | sed -e 's/^[[:space:]]*//')
+    fi
+  done
 }
 
 combine_pem() {
